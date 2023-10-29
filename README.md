@@ -1,77 +1,53 @@
-This project will focus on the design and development of a cryptographic application motivated from a practical use-case.
-
 # Motivation
-The average person has to manage multiple online accounts, each requiring unique login credentials. As the number of platforms grow exponentially, so does the challenge of safely managing these passwords. A report by Cybersecurity Ventures predicts that by 2025, cybercrime will cost the global economy over $10.5 trillion annually. A significant portion of these breaches was a result of weak or reused passwords.
-
-Despite the importance of strong password practices, many people opt for convenience, using passwords that can be easily memorized (and hacked), or reusing the same password across multiple websites, because it is simply not possible for someone to remember multiple complex passwords.
-
-This password manager bridges the gap between security and convenience. By implementing cryptographic practices in the backend, this project aims to provide a practical application of secure password management.
+Poker has long been a popular card game, but many poker games have moved online. While playing poker online is convenient, ensuring fairness and security without a trusted third party is a significant challenge. This project implements the [Fast Mental Poker protocol by Wei and Wang](https://www.researchgate.net/publication/220334557_A_Fast_Mental_Poker_Protocol), ensuring secure, tamper-resistant, and fair online poker games. Our goal is to use cryptographic techniques to make online poker as trustable as traditional face-to-face games.
 
 # Research
-## Authenticating HTTP Requests
-- When a user signs up or logs in, they're provided with a JWT
-- When a user hits an endpoint, they need to send this token in the request headers along with their request
-- The backend then verifies this token
-- Once the token is verified, the user's data is extracted from it (the data was stored in the token when it was created)
+## Secure Peer-to-Peer Communications
+- Upon joining a poker table, players establish a peer-to-peer connection.
+- Every action a player takes is broadcasted to all other players using authenticated message exchange via the `p2pnetwork` python library.
+- This authenticated communication ensures that only legitimate moves by authenticated players are accepted.
 
-## Password Hashing
-The choice of a password hashing library is crucial in ensuring that even if data breaches occur, the actual passwords remain secure and indecipherable.
-
-The password hashing algorithm must be slow ([250ms]([https://security.stackexchange.com/questions/3959/recommended-of-iterations-when-using-pbkdf2-sha256)), and the library used must be well-documented (easy to understand), and open source and widely used (will have been vetted by security experts).
-
-`bcrypt` is suitable for this. 
-
-## Password Generation
-To ensure the generation of cryptographically secure and random passwords, let's use the `crypto` module in Node.js.
-
-How it works:
-
-1. Predefine the ASCII ranges for lowercase letters, uppercase letters, numbers, and symbols. These ranges are used to assemble arrays of character codes representing potential characters for password generation
-2. Based on user preferences, dynamically construct a master array of character codes. For example, if a user opts for both uppercase letters and numbers, the character code array will contain codes for both uppercase letters and digits
-3. For each position in the desired password length, randomly select a character code from the master array using `crypto.randomInt()`. This code is then converted to its corresponding character. This process is repeated until we've achieved the desired password length.
-   1. `crypto.randomInt()` provides cryptographically secure random integers, ensuring each character in the generated password is randomly and securely chosen
-4. Finally, the assembled array of characters is joined together to form the final password string, ready for use
-
-By combining user preferences with cryptographically secure random number generation, this implementation ensures the both customizable and secure passwords.
-
-# Design
+## Deck Encryption and Shuffling
+Using the sec256k1 prime-order elliptic curve, cards are encrypted in a way that even the player who shuffles the deck cannot know the order. This ensures fairness and prevents cheating. The protocols implemented include protocols 1 - 6 as specified in the paper:
+- Protocol 1 (Deck Preparation): Initial deck creation and encryption.
+- Protocol 2 (Random Element Generation): Securely generating random values for shuffling.
+- Protocol 3 (Shuffle): Players can shuffle the deck without knowing the card order.
+- Protocol 4 (Shuffle Verification): All players can verify the fairness of the shuffle.
+- Protocol 5 (Card Drawing): Players draw cards securely without revealing them to others.
+- Protocol 6 (Card Opening): A player can reveal their card to all others without compromising the game.
 
 # Development
-Frontend - React
-
-Backend - Express
-
-DB - Mongo
-
 Main Libraries:
 
-1. `jsonwebtoken` (to secure/authenticate HTTP requests)
-2. `bcryptjs` (to hash passwords)
-2. `crypto` (to generate secure passwords)
+1. `p2pnetwork` (For peer-to-peer communication)
+2. `ecdsa` (For the elliptic curve cryptography involved in the protocols)
+3. `pycryptodome` and `pycryptodomex` (For low-level cryptographic primitives)
+4. `gmpy2` (For multiprecision arithmetic in cryptographic computations)
+5. `sympy` (A symbolic mathematics library which can be useful for certain mathematical cryptographic operations)
+6. `mpmath` (For high-precision arithmetic which might be used for certain cryptographic computations)
 
 # Setup
 
-# User and Data Flow
-1. Login Page
-   1. Before accessing any features, the user is greeted with a login page
-   2. The login page displays fields for inputting email, master password, and sign-up and login buttons
-   3. For first-time users, they will be redirected to a registration page where they can set up their master password
-   4. Otherwise, on login, a request (with the JWT) is sent to the backend
-
-2. Vault Page
-   1. Upon successful login, the user lands on the vault page which shows a list of saved websites and their credentials
-   2. The user can click on an entry to view more details (website, username, password). By default, passwords are hidden, but clicking the button reveals them
-   3. The user can also copy the password to their clipboard
-   4. Action Buttons:
-      1. Add Item: Opens a modal with fields to enter website details (URL, username, password)
-      2. Edit: Allows the user to modify saved details
-      3. Delete: Allows the user to remove saved details
-      4. Generator: Redirects the user to a page with a generated strong password
-   5. Logout
-      1. Clicking the Logout button clears any client-side data and session information, ensuring security. The user is then redirected to the login page
-      2. The backend ensures that user sessions are managed securely, revoking access tokens or session IDs once a logout request is received
-
-3. Generator Page
-   1. The user can customize length using a slider, with a maximum of 128 characters
-   2. The user can choose what to include in the password, including lowercase letters, uppercase letters, numbers, and symbols
-   3. The user can regenerate the password if they are not satisfied with it, or copy it to their clipboard
+# Implementation Details
+1. Protocol 1 (Deck Preparation): Initial deck creation and encryption
+   1. Alice initiates the game by preparing an initial deck of cards.
+   2. The deck is then encrypted by Alice, resulting in a deck: E<sub>Alice</sub>(M).
+2. Protocol 2 (Random Element Generation): Securely generating random values for shuffling.
+   1. Bob generates a random element, which will be used for shuffling and selecting cards from the encrypted deck.
+3. Protocol 3 (Shuffle): Players can shuffle the deck without knowing the card order.
+   1. Using the random element, Bob shuffles the encrypted deck.
+4. Protocol 4 (Shuffle Verification): All players can verify the fairness of the shuffle.
+  1. Alice verifies that the shuffled deck is still valid and has not been tampered with.
+5. Protocol 5 (Card Drawing): Players draw cards securely without revealing them to others.
+   1. For Alice's hand:
+      1. Bob uses the random element to select five ciphertexts (representing five cards) from the encrypted deck and sends them back to Alice.
+      2. Alice decrypts the selected ciphertexts to reveal her hand.
+   2. For Bob's hand:
+      1. Bob selects another set of five cards from the deck and doubly encrypts them: E<sub>Bob</sub>(E<sub>Alice</sub>(M)).
+      2. This doubly encrypted hand is sent to Alice.
+      3. Alice decrypts her layer of encryption and sends the resulting hand back to Bob as E<sub>Bob</sub>(M).
+      4. Bob decrypts the received hand to reveal his set of cards.
+   3. Alice and Bob maintain a list of selected card indices, crossing out the card numbers picked by Bob.
+6. Protocol 6 (Card Opening): A player can reveal their card to all others without compromising the game.
+   1. After the card drawing procedure, both Alice and Bob can choose to reveal their hands to each other.
+   2. Based on standard poker rules, the player with the best 5-card hand is determined as the winner.
