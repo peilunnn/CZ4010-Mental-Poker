@@ -51,3 +51,21 @@ Main Libraries:
 6. Protocol 6 (Card Opening): A player can reveal their card to all others without compromising the game.
    1. After the card drawing procedure, both Alice and Bob can choose to reveal their hands to each other.
    2. Based on standard poker rules, the player with the best 5-card hand is determined as the winner.
+
+
+# FAQ
+## How to prove that the deck is shuffled by the player who didn’t take any advantage on that? How do you define the fairness of the shuffle?
+
+To ensure a fair shuffle, we look at protocols 3 (shuffling) and 4 (verifying that the shuffle has been done correctly)
+
+Shuffling:
+1. Generate a random permutation of the deck using the Fisher-Yates shuffle algorithm, which results in a uniformly random permutation of the deck
+2. Encrypt each card in the shuffled deck using a secret value x, which ensures that even though the player has shuffled the deck, they cannot know the new order because the cards are encrypted
+
+Verifying that the shuffle has been done correctly:
+1. Shuffle the deck multiple times. For each shuffle, generate a proof that consists of the shuffled deck, a new secret, and a new permutation
+2. Using the Fiat-Shamir heuristic, generate a challenge e by hashing the encrypted states of the deck (before and after shuffling).  This challenge is a fixed-size number that represents a "summary" of the shuffle without revealing specific details
+3. Along with the challenge, the shuffler also generates a proof that they have applied a valid shuffle. This proof is constructed in such a way that it would only be valid if the shuffle was performed correctly
+4. Other players can then recompute the challenge e by hashing the same encrypted states of the deck. They then use this challenge to verify the proof provided by the shuffler. If their reconstructed shuffled deck matches the proof's shuffled deck, the shuffle is considered fair
+
+TLDR: we use a NIZK proof where the encrypted states of the deck before and after shuffling are known to all players. A challenge e is generated from these states using a hash function. The shuffler then provides a proof that they have shuffled the deck without knowing the card order. Other players verify this shuffle by independently computing e and checking it against the proof. If the computed e and the proof align, the shuffle is confirmed to be fair, all without revealing the actual card order or values.
